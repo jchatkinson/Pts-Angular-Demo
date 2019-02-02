@@ -1,4 +1,10 @@
-<div id="container">
-  <canvas id="demo"></canvas>
-</div>
+<h1>Pts.js Demonstration components</h1>
+
+<ol>
+  <li *ngFor="let c of components">
+    <a [routerLink]="c.url">{{c.title}}</a>
+  </li>
+</ol>
+
+<router-outlet></router-outlet>
 
