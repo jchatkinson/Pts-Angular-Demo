@@ -1,3 +1,12 @@
-<p>
-  demo2 works!
-</p>
+<span>
+  X:<input type="number" value="100" #xcoord>
+</span>
+<span>
+  Y:<input type="number" value="100" #ycoord>
+</span>
+
+<button (click)="addPoint(xcoord.value, ycoord.value)">Add Point</button>
+
+<div id="container">
+  <div id="demo"></div>
+</div>
