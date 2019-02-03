@@ -14,6 +14,9 @@ export class AppComponent implements OnInit {
   }, {
     title: 'Demo 2',
     url: '/demo/2',
+  }, {
+    title: 'Demo 3',
+    url: '/demo/3',
   }];
 
   constructor() {
