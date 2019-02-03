@@ -12,7 +12,7 @@ export class Demo3Component implements OnInit {
   // space: SVGSpace;
   // form: SVGForm;
   nodes: INode[] = [];
-  frames: IFrame[] = [];
+  frames: cFrame[] = [];
 
   constructor() {
 
@@ -69,7 +69,8 @@ export class Demo3Component implements OnInit {
   addPoint(x: Number, y: Number) {
     let pt = new Pt([x,y]);
     let labelpt = this.offsetText(pt);
-    let label = this.nodes.push({coord: pt, dof: [1,1,1,1,1,1]}); //node id = position in array + 1
+    let label = this.nodes.length+1;
+    label = this.nodes.push({label: label, pt: pt, dof: [1,1,1,1,1,1]}); //node id = position in array + 1
 
     this.space.add((time, ftime, space) => {
       this.form.point(pt, 5, 'circle');
@@ -77,20 +78,45 @@ export class Demo3Component implements OnInit {
     });
   }
 
-  addFrame(i: Number, j: Number) {
-    this.space.add((time, ftime, space) => {
+  drawFrame(i: number, j: number) {
+    console.log(this.nodes)
+    let pti = this.nodes[i-1].pt; 
+    let ptj = this.nodes[j-1].pt; 
 
-    })
+    if(pti && ptj) {
+      this.space.add((time, ftime, space) => {
+        this.form.line([pti, ptj])
+      })
+    }
+
   }
 }
 
 export interface INode {
-  coord: Pt;
+  label: Number;
+  pt: Pt;
   dof: Number[];
-}
+};
 
-export interface IFrame {
-  pts: Group;
+export class cFrame {
+  i: INode; //start node
+  j: INode; //end node
   releases: Number[]; // a pair of booleans for frame releases [false, false]
+  E: Number;
+  G: Number;
+  A: Number;
+  Iz: Number;
+  Iy: Number;
+  J: Number;
+
+  constructor(Nodei: INode, Nodej: INode, releases: Number[] = [0, 0], E: Number, G:Number, A:Number, Iz:Number, Iy:Number,J:Number ) {
+    this.i = Nodei;
+    this.j = Nodej;
+    this.releases = releases;
+  }
+
+  length(): Number {
+    return this.i.pt.$subtract(this.j.pt).magnitude();
+  }
 }
 
