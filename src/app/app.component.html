@@ -1,10 +1,17 @@
-<h1>Pts.js Demonstration components</h1>
+<div class="container">
+    <a [routerLink]="['/home']"><h1>Pts.js Demonstration components</h1></a>
 
-<ol>
-  <li *ngFor="let c of components">
-    <a [routerLink]="c.url">{{c.title}}</a>
-  </li>
-</ol>
+    <nav>
+        <ol>
+            <li *ngFor="let c of components">
+              <a [routerLink]="c.url">{{c.title}}</a>
+            </li>
+          </ol>
+    </nav>
 
-<router-outlet></router-outlet>
+    <router-outlet></router-outlet>
+</div>
+
+
+
 

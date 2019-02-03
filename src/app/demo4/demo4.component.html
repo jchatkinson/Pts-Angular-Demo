@@ -1,0 +1,21 @@
+<p> Add a node:</p>
+<p>
+  <span>
+    X:<input type="number" value="100" #xcoord>
+    Y:<input type="number" value="100" #ycoord>
+    <button (click)="addPoint(xcoord.value, ycoord.value)">Add</button>
+  </span>
+</p>
+
+<p> Add a frame:</p>
+<p>  
+  <span>
+    Node i:<input type="number" value="1" #inode>
+    Node j:<input type="number" value="2" #jnode>
+    <button (click)="drawFrame(inode.value, jnode.value)">Add</button>
+  </span>
+</p>
+
+<div id="container">
+  <div id="demo"></div>
+</div>
