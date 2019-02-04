@@ -1,3 +1,10 @@
-.container {
+mat-sidenav-container {
     height: 100%;
+
+    .container {
+        height: calc(100% - 64px);
+        padding: 16px 16px 16px 16px;
+    }
+
 }
+

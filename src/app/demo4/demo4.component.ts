@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CanvasSpace, Pt, Group, CanvasForm, SVGSpace, SVGForm, Circle, Rectangle, Triangle, Curve, Num, PtLike } from 'pts';
+import { CanvasSpace, Pt, Group, CanvasForm, UIButton, UIDragger, UI, Rectangle, Curve, Num, Line, Const } from 'pts';
 
 @Component({
   selector: 'app-demo4',
@@ -9,10 +9,6 @@ import { CanvasSpace, Pt, Group, CanvasForm, SVGSpace, SVGForm, Circle, Rectangl
 export class Demo4Component implements OnInit {
   space: CanvasSpace;
   form: CanvasForm;
-  // space: SVGSpace;
-  // form: SVGForm;
-  nodes: INode[] = [];
-  frames: cFrame[] = [];
 
   constructor() {
 
@@ -21,102 +17,107 @@ export class Demo4Component implements OnInit {
   ngOnInit() {
     this.setupSpace();
     this.setupForm();
-    this.setupPoints();
+    this.setupPoints(this.space, this.form);
   }
 
   // Space is the paper
   setupSpace() {
     this.space = new CanvasSpace('#demo');
-    // this.space = new SVGSpace('#demo');
     this.space.setup({ bgcolor: '#d3d3d3', resize: true });
   }
   // Form is the pencil
   setupForm() {
     this.form = this.space.getForm();
   }
-
   // Points are the idea
-  setupPoints() {
-    this.space.add(
-      (time, ftime, space) => {
-        // let cycle = (off) => this.space.center.y * (Num.cycle((time + off) % 2000 / 2000) - 0.5);
-
-        // this.circle = Circle.fromCenter(this.space.center.$add(0, cycle(0)), 30);
-        // this.circle.moveBy(new Pt(0, cycle(0)));
-        // this.rect = Rectangle.fromCenter(this.space.center.$add(cycle(1000), 0), 50);
-        // this.rect.moveBy(cycle(1000), 0);
-        // this.triangle = Triangle.fromCenter(this.space.center.$add(cycle(0) / 2, cycle(500)), 30);
-        // this.triangle.moveBy(cycle(0) / 2, cycle(500));
-        // this.curve = new Group(this.space.pointer, this.circle.p1, this.rect.p1, this.triangle.p1, this.space.pointer);
-
-        this.form.stroke('#fff', 3)
-        // this.form.fill('#ff6').circle(this.circle);
-        // this.form.fill('#09f').rect(this.rect);
-        // this.form.fill('#f03').polygon(this.triangle);
-        // this.form.strokeOnly('#123', 5).polygon(Curve.cardinal(this.curve));
-        // this.form.fillOnly('#124').point(this.space.pointer, 10, 'circle');
+  setupPoints(space, form) {
+    var handles;
+    var firstPt, lastPt;
+    var tension = 0.5;
+    var prev;
+    var ang = 0;
+  
+    space.add( {
+  
+      start: (bound, space) => {      
+        let hs = Line.subpoints( [space.center.$multiply(0.25), space.center.$add( space.center.$multiply(0.75) )], 5 );
+  
+        // convert points to UIs
+        handles = hs.map( h => {
+          let ud = UIDragger.fromCircle( [h, new Pt([10,10])], {} ) as UIDragger;
+          
+          ud.onDrag( (ui, pt) => { // drag handling
+            ui.group[0].to( space.pointer.$subtract( ui.state('offset') ) ) 
+          });
+  
+          ud.onHover( // hover handling
+            (ui) => ui.group[1].scale(2),
+            (ui) => ui.group[1].scale(1/2),
+          )
+          return ud;
+        });
+  
+        let hovOn = (ui) => ui.group.scale(3, ui.group.centroid());
+        let hovOff = (ui) => ui.group.scale(1/3, ui.group.centroid());
+        
+        firstPt = UIButton.fromPolygon( Group.fromArray([[0, space.center.y-30], [0, space.center.y+30], [30, space.center.y]]), {} );
+        firstPt.onClick( ui => { tension = Math.max( 0.1, tension-0.1 ) } );
+        firstPt.onHover( hovOn, hovOff );
+        
+        lastPt = UIButton.fromPolygon( Group.fromArray([[space.width, space.center.y-30], [space.width, space.center.y+30], [space.width-30, space.center.y]]), {} );
+        lastPt.onClick( ui => { tension = Math.min( 2, tension+0.1 ) });
+        lastPt.onHover( hovOn, hovOff );
+  
+      },   
+  
+      animate: (time, ftime) => {
+  
+        let ctrls = handles.map( g => g.group[0] );
+        ctrls.unshift( firstPt.group[2] );
+        ctrls.push( lastPt.group[2] );
+  
+        let curve = Curve.cardinal( ctrls, 15, tension );
+        curve.unshift( firstPt.group[0] );
+        curve.unshift( new Pt(0,0) );
+        curve.push( lastPt.group[0] );
+        curve.push( new Pt(space.size.x,0) );
+        
+        let t = Num.cycle( (time%5000)/5000 );
+      
+        // get current curve point and angle
+        let ci = 2 + Math.floor(t*(curve.length-4));
+        if ( prev !== undefined && !curve[ci].equals(curve[prev]) ) {
+          ang = curve[ci].$subtract( curve[prev]).angle() + Const.quarter_pi;
+        }
+        prev = ci;
+        
+        form.fillOnly("#f06");
+        handles.forEach( h => h.render( g => form.circle(g) ) );
+        
+        form.fillOnly("rgba(0,0,50,.8)").line( curve );
+  
+        let rect = Rectangle.corners( Rectangle.fromCenter( curve[ci], 20 ) ).rotate2D( ang, curve[ci] );
+        form.strokeOnly("#fff", 7).lines( [ [rect[0], rect[2]], [rect[1], rect[3]] ] );
+        
+        firstPt.render( g => form.fillOnly("#fe3").polygon( g ) );
+        lastPt.render( g => form.fillOnly("#0c6").polygon( g ) );
+        
+      },
+  
+      action:( type, px, py) => {
+        UI.track( handles, type, new Pt(px, py) );
+        UI.track( [firstPt, lastPt], type, new Pt(px, py) );
+      },
+      
+      resize:( bound, evt) => {
+        if (form.ready) {
+          firstPt.group = Group.fromArray( [[0, space.center.y-30], [0, space.center.y+30], [30, space.center.y]] );
+          lastPt.group = Group.fromArray( [[space.width, space.center.y-30], [space.width, space.center.y+30], [space.width-30, space.center.y]] );
+        }
       }
-    );
-    this.space.play();
-  }
-
-  offsetText(p: Pt): Pt {
-    // shift by 5px, -5px;
-    let np = p.$add(5,-5);
-    return np;
-  }
-
-  addPoint(x: Number, y: Number) {
-    let pt = new Pt([x,y]);
-    let labelpt = this.offsetText(pt);
-    let label = this.nodes.length+1;
-    label = this.nodes.push({label: label, pt: pt, dof: [1,1,1,1,1,1]}); //node id = position in array + 1
-
-    this.space.add((time, ftime, space) => {
-      this.form.point(pt, 5, 'circle');
-      this.form.text(labelpt, String(label));  
     });
-  }
-
-  drawFrame(i: number, j: number) {
-    console.log(this.nodes)
-    let pti = this.nodes[i-1].pt; 
-    let ptj = this.nodes[j-1].pt; 
-
-    if(pti && ptj) {
-      this.space.add((time, ftime, space) => {
-        this.form.line([pti, ptj])
-      })
-    }
-
+      
+    //// ----
+    space.bindMouse().bindTouch().play();
   }
 }
-
-export interface INode {
-  label: Number;
-  pt: Pt;
-  dof: Number[];
-};
-
-export class cFrame {
-  i: INode; //start node
-  j: INode; //end node
-  releases: Number[]; // a pair of booleans for frame releases [false, false]
-  E: Number;
-  G: Number;
-  A: Number;
-  Iz: Number;
-  Iy: Number;
-  J: Number;
-
-  constructor(Nodei: INode, Nodej: INode, releases: Number[] = [0, 0], E: Number, G:Number, A:Number, Iz:Number, Iy:Number,J:Number ) {
-    this.i = Nodei;
-    this.j = Nodej;
-    this.releases = releases;
-  }
-
-  length(): Number {
-    return this.i.pt.$subtract(this.j.pt).magnitude();
-  }
-}
-
