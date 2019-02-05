@@ -41,7 +41,7 @@ export class Demo3Component implements OnInit {
       (time, ftime, space) => {
         this.nodes.forEach( n => {
           this.form.point(n.pt, 5, 'circle');
-          this.form.text(this.offsetText(n.pt), String(n.label))
+          this.form.text(this.offsetText(n.pt), String(n.label));
         });
         this.frames.forEach( f => {
           this.form.line([f.i.pt, f.j.pt]);
@@ -53,14 +53,13 @@ export class Demo3Component implements OnInit {
 
   offsetText(p: Pt): Pt {
     // shift by 5px, -5px;
-    let np = p.$add(5,-5);
-    return np;
+    return p.$add(5, -5);
   }
 
   addPoint(x: Number, y: Number) {
-    let pt = new Pt([x,y]);
+    const pt = new Pt([x, y]);
     let label = this.nodes.length + 1;
-    label = this.nodes.push({label: label, pt: pt, dof: [1,1,1,1,1,1]}); //node id = position in array + 1
+    label = this.nodes.push({label: label, pt: pt, dof: [1, 1, 1, 1, 1, 1]}); // node id = position in array + 1
   }
 
   addFrame(i: number, j: number) {
@@ -72,7 +71,7 @@ export interface INode {
   label: Number;
   pt: Pt;
   dof: Number[];
-};
+}
 
 export class CFrame {
   i: INode; // start node
