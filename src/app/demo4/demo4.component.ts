@@ -1,12 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { CanvasSpace, Pt, Group, CanvasForm, UIButton, UIDragger, UI, Rectangle, Curve, Num, Line, Const, UIHandler, Space, Form } from 'pts';
+import { CanvasSpace, Pt, Group, CanvasForm, UIButton, UIDragger, UI, Rectangle, Curve, Num, Line, Const, UIHandler } from 'pts';
 import { MatDialog } from '@angular/material';
-import { DialogComponent } from './dialog/dialog.component';
-
-export interface DialogData {
-  animal: string;
-  name: string;
-}
+import { DialogComponent, DialogData } from './dialog/dialog.component';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-demo4',
@@ -27,15 +23,13 @@ export class Demo4Component implements OnInit {
     this.setupPoints(this.space, this.form);
   }
 
-  openDialog(): void {
+  openDialog(): Observable<DialogData> {
     const dialogRef = this.dialog.open(DialogComponent, {
       width: '250px',
-      data: {name: 'Jeremy', animal: 'tiger'}
+      data: {}
     });
 
-    dialogRef.afterClosed().subscribe(result => {
-      console.log('The dialog was closed');
-    });
+    return dialogRef.afterClosed();
   }
 
   // Space is the paper
@@ -49,11 +43,11 @@ export class Demo4Component implements OnInit {
   }
   // Points are the idea
   setupPoints(space, form) {
-    var handles: UIDragger[];
-    var firstPt: UIButton, lastPt: UIButton;
-    var tension = 0.5;
-    var prev: number;
-    var ang = 0;
+    let handles: UIDragger[];
+    let firstPt: UIButton, lastPt: UIButton;
+    let tension = 0.5;
+    let prev: number;
+    let ang = 0;
 
     space.add({
 
@@ -75,17 +69,24 @@ export class Demo4Component implements OnInit {
           return ud;
         });
 
-        let hovOn: UIHandler = (ui) => ui.group.scale(3, ui.group.centroid());
-        let hovOff: UIHandler = (ui) => ui.group.scale(1 / 3, ui.group.centroid());
+        const hovOn: UIHandler = (ui) => ui.group.scale(3, ui.group.centroid());
+        const hovOff: UIHandler = (ui) => ui.group.scale(1 / 3, ui.group.centroid());
 
-        firstPt = UIButton.fromPolygon(Group.fromArray([[0, space.center.y - 30], [0, space.center.y + 30], [30, space.center.y]]), {}) as UIButton;
-        firstPt.onClick(ui => { 
-          tension = Math.max(0.1, tension - 0.1);
-          this.openDialog();
+        firstPt = UIButton.fromPolygon(
+          Group.fromArray([[0, space.center.y - 30], [0, space.center.y + 30], [30, space.center.y]]), 
+          {}) as UIButton;
+
+        firstPt.onClick(ui => {
+          this.openDialog().subscribe((res: DialogData) => {
+            console.log('res is', res);
+            firstPt.group.moveBy({x: res.x, y: res.y});
+          });
         });
         firstPt.onHover(hovOn, hovOff);
 
-        lastPt = UIButton.fromPolygon(Group.fromArray([[space.width, space.center.y - 30], [space.width, space.center.y + 30], [space.width - 30, space.center.y]]), {}) as UIButton;
+        lastPt = UIButton.fromPolygon(
+          Group.fromArray([[space.width, space.center.y - 30], [space.width, space.center.y + 30], [space.width - 30, space.center.y]]),
+          {}) as UIButton;
         lastPt.onClick(ui => { tension = Math.min(2, tension + 0.1) });
         lastPt.onHover(hovOn, hovOff);
 
