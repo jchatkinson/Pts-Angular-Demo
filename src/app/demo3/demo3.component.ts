@@ -9,11 +9,11 @@ import { CanvasSpace, Pt, Group, CanvasForm, SVGSpace, SVGForm, Circle, Rectangl
 export class Demo3Component implements OnInit {
   space: CanvasSpace;
   form: CanvasForm;
-  nodes: CNode[] = [];
+  nodes: UIButton[] = [];
   frames: CFrame[] = [];
   rad = 5;
-  hovOn: UIHandler = (ui) => ui.group.scale(3, ui.group.centroid());
-  hovOff: UIHandler = (ui) => ui.group.scale(1 / 3, ui.group.centroid());
+  hovOn: UIHandler = (ui) => ui.group[1].scale(3);
+  hovOff: UIHandler = (ui) => ui.group[1].scale(1 / 3);
 
   constructor() {
 
@@ -46,10 +46,11 @@ export class Demo3Component implements OnInit {
       },
       animate: (time: number, ftime: number) => {
         this.nodes.forEach( n => {
-          n.render(g => this.form.circle(g));
+          n.render(g => this.form.fillOnly("#f06").circle(g));
         });
         this.frames.forEach( f => {
-          this.form.line([f.i.group.centroid(), f.j.group.centroid()]);
+          this.form.stroke('black',2)
+          this.form.line([f.i.group[0], f.j.group[0]]);
         });
       },
       action: (type: string, px: number, py: number) => {
@@ -61,7 +62,7 @@ export class Demo3Component implements OnInit {
         }        
       }
     });
-    this.space.play();
+    this.space.bindMouse().play();
   }
 
   offsetText(p: Pt): Pt {
@@ -70,29 +71,33 @@ export class Demo3Component implements OnInit {
   }
 
   addPoint(x: Number, y: Number) {
+    let g = Circle.fromCenter(new Pt([x, y]), this.rad);
     let len = this.nodes.push(
-      new CNode([new Pt([x, y]), new Pt([10, 10])],'circle',{})
+      new UIButton(g,'circle',{})
     )
     this.nodes[len-1].onClick(ui => console.log('clicked'))
     this.nodes[len-1].onHover(this.hovOn, this.hovOff)
+    console.log(g)
   }
 
   addFrame(i: number, j: number) {
-    this.frames.push(new CFrame(this.nodes[i - 1], this.nodes[j - 1]));
+    if (this.nodes.length >= Math.max(i,j)) {
+      this.frames.push(new CFrame(this.nodes[i - 1], this.nodes[j - 1]));
+    } else {
+      console.log('invalid node')
+    }
   }
 }
 
-export class CNode extends UIButton {
-  dof: Number[];
-  constructor(group: GroupLike, shape:string, states:{[key:string]: any}={}, dof: Number[]=[1,1,1,1,1,1], id?:string) {
-    super(group, shape, states, id);
-    this.dof = dof;
-  }
-}
+// export class CNode extends UIButton {
+//   constructor(group: GroupLike, shape: string, states?: {[key: string]: any;}, id?: string){
+//     super(group, shape, states, id)
+//   };
+// }
 
 export class CFrame {
-  i: CNode; // start node
-  j: CNode; // end node
+  i: UIButton; // start node
+  j: UIButton; // end node
   releases?: Number[] = [0, 0]; // a pair of 0/1 for frame releases
   E?: Number;
   G?: Number;
@@ -101,7 +106,7 @@ export class CFrame {
   Iy?: Number;
   J?: Number;
 
-  constructor(i: CNode, j: CNode, releases?: Number[] , E?: Number, G?: Number, A?: Number, Iz?: Number, Iy?: Number, J?: Number) {
+  constructor(i: UIButton, j: UIButton, releases?: Number[] , E?: Number, G?: Number, A?: Number, Iz?: Number, Iy?: Number, J?: Number) {
     this.i = i;
     this.j = j;
     this.releases = releases;
