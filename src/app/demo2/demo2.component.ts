@@ -15,6 +15,7 @@ export class Demo2Component implements OnInit {
   rect: Group;
   triangle: Group;
   curve: Group;
+  nodes: Group = new Group;
   constructor() {
 
   }
@@ -56,16 +57,17 @@ export class Demo2Component implements OnInit {
         this.form.fill('#f03').polygon(this.triangle);
         this.form.strokeOnly('#123', 5).polygon(Curve.cardinal(this.curve));
         this.form.fillOnly('#124').point(this.space.pointer, 10, 'circle');
+
+        this.nodes.forEach(p => {
+          this.form.point(p, 10, 'circle')
+        })
       }
     );
     this.space.play().bindMouse();
   }
 
   addPoint(x: Number, y: Number) {
-    this.space.add((time, ftime, space) => {
       let pt = new Pt([x,y]);
-      this.form.point(pt, 10, 'circle');
-    });
-    // this.space.play();
+      this.nodes.push(pt);
   }
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CanvasSpace, Pt, Group, CanvasForm, SVGSpace, SVGForm, Circle, Rectangle, Triangle, Curve, Num, PtLike } from 'pts';
+import { CanvasSpace, Pt, Group, CanvasForm, SVGSpace, SVGForm, Circle, Rectangle, Triangle, Curve, Num, PtLike, UIHandler, UIButton, UI, UIDragger, GroupLike } from 'pts';
 
 @Component({
   selector: 'app-demo3',
@@ -9,10 +9,11 @@ import { CanvasSpace, Pt, Group, CanvasForm, SVGSpace, SVGForm, Circle, Rectangl
 export class Demo3Component implements OnInit {
   space: CanvasSpace;
   form: CanvasForm;
-  // space: SVGSpace;
-  // form: SVGForm;
-  nodes: INode[] = [];
+  nodes: CNode[] = [];
   frames: CFrame[] = [];
+  rad = 5;
+  hovOn: UIHandler = (ui) => ui.group.scale(3, ui.group.centroid());
+  hovOff: UIHandler = (ui) => ui.group.scale(1 / 3, ui.group.centroid());
 
   constructor() {
 
@@ -37,17 +38,29 @@ export class Demo3Component implements OnInit {
 
   // Points are the idea
   setupPoints() {
-    this.space.add(
-      (time, ftime, space) => {
+
+
+    this.space.add({
+      start: (bound, space) => {
+
+      },
+      animate: (time: number, ftime: number) => {
         this.nodes.forEach( n => {
-          this.form.point(n.pt, 5, 'circle');
-          this.form.text(this.offsetText(n.pt), String(n.label));
+          n.render(g => this.form.circle(g));
         });
         this.frames.forEach( f => {
-          this.form.line([f.i.pt, f.j.pt]);
+          this.form.line([f.i.group.centroid(), f.j.group.centroid()]);
         });
+      },
+      action: (type: string, px: number, py: number) => {
+        UI.track(this.nodes, type, new Pt(px, py));
+      }, 
+      resize: (bound, event) => {
+        if (this.form.ready) {
+          console.log('resized');
+        }        
       }
-    );
+    });
     this.space.play();
   }
 
@@ -57,9 +70,11 @@ export class Demo3Component implements OnInit {
   }
 
   addPoint(x: Number, y: Number) {
-    const pt = new Pt([x, y]);
-    let label = this.nodes.length + 1;
-    label = this.nodes.push({label: label, pt: pt, dof: [1, 1, 1, 1, 1, 1]}); // node id = position in array + 1
+    let len = this.nodes.push(
+      new CNode([new Pt([x, y]), new Pt([10, 10])],'circle',{})
+    )
+    this.nodes[len-1].onClick(ui => console.log('clicked'))
+    this.nodes[len-1].onHover(this.hovOn, this.hovOff)
   }
 
   addFrame(i: number, j: number) {
@@ -67,15 +82,17 @@ export class Demo3Component implements OnInit {
   }
 }
 
-export interface INode {
-  label: Number;
-  pt: Pt;
+export class CNode extends UIButton {
   dof: Number[];
+  constructor(group: GroupLike, shape:string, states:{[key:string]: any}={}, dof: Number[]=[1,1,1,1,1,1], id?:string) {
+    super(group, shape, states, id);
+    this.dof = dof;
+  }
 }
 
 export class CFrame {
-  i: INode; // start node
-  j: INode; // end node
+  i: CNode; // start node
+  j: CNode; // end node
   releases?: Number[] = [0, 0]; // a pair of 0/1 for frame releases
   E?: Number;
   G?: Number;
@@ -84,14 +101,14 @@ export class CFrame {
   Iy?: Number;
   J?: Number;
 
-  constructor(i: INode, j: INode, releases?: Number[] , E?: Number, G?: Number, A?: Number, Iz?: Number, Iy?: Number, J?: Number) {
+  constructor(i: CNode, j: CNode, releases?: Number[] , E?: Number, G?: Number, A?: Number, Iz?: Number, Iy?: Number, J?: Number) {
     this.i = i;
     this.j = j;
     this.releases = releases;
   }
 
   length(): Number {
-    return this.i.pt.$subtract(this.j.pt).magnitude();
+    return this.i.group.centroid().$subtract(this.j.group.centroid()).magnitude();
   }
 }
 
